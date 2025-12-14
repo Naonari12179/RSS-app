@@ -1,24 +1,35 @@
-//
-//  ContentView.swift
-//  RSS-app
-//
-//  Created by 谷本直柔 on 2025/12/14.
-//
-
 import SwiftUI
+import SwiftData
 
 struct ContentView: View {
+    let container: ModelContainer
+    @StateObject private var homeViewModel: HomeViewModel
+    @StateObject private var watchListViewModel: WatchListViewModel
+
+    init(container: ModelContainer) {
+        self.container = container
+        let store = DataStore(context: container.mainContext)
+        _homeViewModel = StateObject(wrappedValue: HomeViewModel(store: store))
+        _watchListViewModel = StateObject(wrappedValue: WatchListViewModel(store: store))
+    }
+
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        TabView {
+            HomeView(viewModel: homeViewModel)
+                .tabItem {
+                    Label("Home", systemImage: "list.bullet")
+                }
+            WatchListView(viewModel: watchListViewModel)
+                .tabItem {
+                    Label("Watchlist", systemImage: "eye")
+                }
         }
-        .padding()
+        .task {
+            BackgroundRefreshManager.shared.schedule()
+        }
     }
 }
 
 #Preview {
-    ContentView()
+    ContentView(container: try! ModelContainer(for: [Watch.self, FeedItem.self]))
 }
